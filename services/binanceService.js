@@ -17,19 +17,25 @@ const binanceP2PApi = {
 };
 
 const extractAdsInfo = (ads) => {
-  return ads.map(ad => ({
-    price: parseFloat(ad.adv.price),
-    symbol: ad.adv.fiatSymbol,
-    minSingleAmount: parseFloat(ad.adv.minSingleTransAmount),
-    maxSingleAmount: parseFloat(ad.adv.maxSingleTransAmount),
-    dynamicMaxSingleAmount: parseFloat(ad.adv.dynamicMaxSingleTransAmount),
-    minSingleQuantity: parseFloat(ad.adv.minSingleTransQuantity),
-    maxSingleQuantity: parseFloat(ad.adv.maxSingleTransQuantity),
-    dynamicMaxSingleQuantity: parseFloat(ad.adv.dynamicMaxSingleTransQuantity),
-    quantity: parseFloat(ad.adv.tradableQuantity),
-    payments: ad.adv.tradeMethods.map(method => method.tradeMethodName).join(', '),
-    username: `${ad.advertiser.nickName} (trades: ${ad.advertiser.monthOrderCount})`
-  }));
+  const excludedPayments = process.env.EXCLUDED_PAYMENTS.split(',');
+  return ads
+    .filter(ad => {
+        const tradeMethods = ad.adv.tradeMethods.map(method => method.tradeMethodName);
+        return !tradeMethods.every(method => excludedPayments.includes(method));
+    })
+    .map(ad => ({
+      price: parseFloat(ad.adv.price),
+      symbol: ad.adv.fiatSymbol,
+      minSingleAmount: parseFloat(ad.adv.minSingleTransAmount),
+      maxSingleAmount: parseFloat(ad.adv.maxSingleTransAmount),
+      dynamicMaxSingleAmount: parseFloat(ad.adv.dynamicMaxSingleTransAmount),
+      minSingleQuantity: parseFloat(ad.adv.minSingleTransQuantity),
+      maxSingleQuantity: parseFloat(ad.adv.maxSingleTransQuantity),
+      dynamicMaxSingleQuantity: parseFloat(ad.adv.dynamicMaxSingleTransQuantity),
+      quantity: parseFloat(ad.adv.tradableQuantity),
+      payments: ad.adv.tradeMethods.map(method => method.tradeMethodName).join(', '),
+      username: `${ad.advertiser.nickName} (trades: ${ad.advertiser.monthOrderCount})`
+    }));
 };
 
 exports.getTopUsdThb = async() => {
@@ -41,7 +47,7 @@ exports.getTopUsdThb = async() => {
       rows: 10
     }});
     const ads = response?.data?.data;
-    if (!ads) {
+    if (!ads || !ads.length) {
       throw new Error('No USD-THB listings were found.');
     }
     return extractAdsInfo(ads);
@@ -49,7 +55,7 @@ exports.getTopUsdThb = async() => {
     console.error(error);
     throw error;
   }
-}
+};
 
 exports.getTopUsdThbByThbAmount = async(amountInThb) => {
   try {
@@ -58,10 +64,10 @@ exports.getTopUsdThbByThbAmount = async(amountInThb) => {
       fiat: 'THB',
       tradeType: 'SELL',
       transAmount: amountInThb,
-      rows: 1
+      rows: 10
     }});
     const ads = response?.data?.data;
-    if (!ads) {
+    if (!ads || !ads.length) {
       throw new Error('No USD-THB listings were found.');
     }
     return extractAdsInfo(ads);
@@ -69,7 +75,7 @@ exports.getTopUsdThbByThbAmount = async(amountInThb) => {
     console.error(error);
     throw error;
   }
-}
+};
 
 exports.getTopUsdThbByUsdAmount = async(amountInUsd) => {
   try {
@@ -80,19 +86,24 @@ exports.getTopUsdThbByUsdAmount = async(amountInUsd) => {
       rows: 20
     }});
     const ads = response?.data?.data;
-    if (!ads) {
-      throw new Error('No USD-THB listings were found.');
+    if (!ads || !ads.length) {
+      throw new Error('No USD-THB listings were found from top sellers. Try adjusting the amount.');
     }
-    const matchingAd = ads.find(ad => ad.adv.tradableQuantity >= amountInUsd);
-    if (!matchingAd) {
+    let matchingAds;
+    if (amountInUsd) {
+      matchingAds = ads.filter(ad => ad.adv.tradableQuantity >= amountInUsd);
+    } else {
+      matchingAds = ads;
+    }
+    if (!matchingAds) {
       throw new Error('No USD-MMK listings that match the quantity were found.');
     }
-    return extractAdsInfo([ matchingAd ]);
+    return extractAdsInfo(matchingAds);
   } catch(error) {
     console.error(error);
     throw error;
   }
-}
+};
 
 exports.getTopThbUsd = async() => {
   try {
@@ -103,7 +114,7 @@ exports.getTopThbUsd = async() => {
       rows: 10
     }});
     const ads = response?.data?.data;
-    if (!ads) {
+    if (!ads || !ads.length) {
       throw new Error('No THB-USD listings were found.');
     }
     return extractAdsInfo(ads);
@@ -115,15 +126,16 @@ exports.getTopThbUsd = async() => {
 
 exports.getTopThbUsdByThbAmount = async(amountInThb) => {
   try {
-    const response = await axios.request({...binanceP2PApi, data: {
+    const requestPayload = {
       ...p2pTemplate,
       fiat: 'THB',
       tradeType: 'BUY',
-      transAmount: amountInThb,
-      rows: 1
-    }});
+      rows: 20
+    };
+    if (amountInThb) requestPayload['transAmount'] = amountInThb;
+    const response = await axios.request({...binanceP2PApi, data: requestPayload});
     const ads = response?.data?.data;
-    if (!ads) {
+    if (!ads || !ads.length) {
       throw new Error('No THB-USD listings were found.');
     }
     return extractAdsInfo(ads);
@@ -131,7 +143,7 @@ exports.getTopThbUsdByThbAmount = async(amountInThb) => {
     console.error(error);
     throw error;
   }
-}
+};
 
 exports.getTopUsdMmk = async() => {
   try {
@@ -142,7 +154,7 @@ exports.getTopUsdMmk = async() => {
       rows: 10
     }});
     const ads = response?.data?.data;
-    if (!ads) {
+    if (!ads || !ads.length) {
       throw new Error('No USD-MMK listings were found.');
     }
     return extractAdsInfo(ads);
@@ -150,7 +162,7 @@ exports.getTopUsdMmk = async() => {
     console.error(error);
     throw error;
   }
-}
+};
 
 exports.getTopUsdMmkByUsdAmount = async(amountInUsd) => {
   try {
@@ -161,19 +173,24 @@ exports.getTopUsdMmkByUsdAmount = async(amountInUsd) => {
       rows: 20
     }});
     const ads = response?.data?.data;
-    if (!ads) {
-      throw new Error('No USD-MMK listings were found.');
+    if (!ads || !ads.length) {
+      throw new Error('No USD-MMK listings were found from top sellers. Try adjusting the amount.');
     }
-    const matchingAd = ads.find(ad => ad.adv.tradableQuantity >= amountInUsd);
-    if (!matchingAd) {
+    let matchingAds;
+    if (amountInUsd) {
+      matchingAds = ads.filter(ad => ad.adv.tradableQuantity >= amountInUsd);
+    } else {
+      matchingAds = ads;
+    }
+    if (!matchingAds) {
       throw new Error('No USD-MMK listings that match the quantity were found.');
     }
-    return extractAdsInfo([ matchingAd ]);
+    return extractAdsInfo(matchingAds);
   } catch(error) {
     console.error(error);
     throw error;
   }
-}
+};
 
 exports.getTopMmkUsd = async() => {
   try {
@@ -184,7 +201,7 @@ exports.getTopMmkUsd = async() => {
       rows: 10
     }});
     const ads = response?.data?.data;
-    if (!ads) {
+    if (!ads || !ads.length) {
       throw new Error('No MMK-USD listings were found.');
     }
     return extractAdsInfo(ads);
@@ -192,19 +209,20 @@ exports.getTopMmkUsd = async() => {
     console.error(error);
     throw error;
   }
-}
+};
 
 exports.getTopMmkUsdByMmkAmount = async(amountInMmk) => {
   try {
-    const response = await axios.request({...binanceP2PApi, data: {
+    const requestPayload = {
       ...p2pTemplate,
       fiat: 'MMK',
       tradeType: 'BUY',
-      transAmount: amountInMmk,
-      rows: 1
-    }});
+      rows: 20
+    };
+    if (amountInMmk) requestPayload['transAmount'] = amountInMmk;
+    const response = await axios.request({...binanceP2PApi, data: requestPayload});
     const ads = response?.data?.data;
-    if (!ads) {
+    if (!ads || !ads.length) {
       throw new Error('No USD-MMK listings were found.');
     }
     return extractAdsInfo(ads);
@@ -212,4 +230,4 @@ exports.getTopMmkUsdByMmkAmount = async(amountInMmk) => {
     console.error(error);
     throw error;
   }
-}
+};

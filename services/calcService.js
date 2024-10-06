@@ -19,59 +19,61 @@ exports.calculateCashoutUsd = async(cashoutUsdAmt) => {
     return {
       ...calculatedData,
       difference: ((cashoutUsdAmt * calculatedData.p2pPrice) / calculatedData.localPrice).toFixed(2) - cashoutUsdAmt
-    }
+    };
   } catch(error) {
     console.error(error);
     throw error;
   }
-}
+};
 
 exports.calculateBahtToKyat = async(thbAmount) => {
   try {
+    const isAmountProvided = !!thbAmount;
     const p2pThbUsd = await binanceService.getTopThbUsdByThbAmount(thbAmount);
     const bestThbUsd = p2pThbUsd[0];
-    const usdAmount = thbAmount / bestThbUsd.price;
+    const usdAmount = isAmountProvided ? (thbAmount / bestThbUsd.price) : undefined;
     const p2pUsdMmk = await binanceService.getTopUsdMmkByUsdAmount(usdAmount);
     const bestUsdMmk = p2pUsdMmk[0];
-    const bestThbMmk = (bestUsdMmk.price / bestThbUsd.price).toFixed(2);
+    const bestThbMmk = bestUsdMmk.price / bestThbUsd.price;
     return {
       thbAmount: thbAmount,
       usdThbPrice: bestThbUsd.price,
       usdThbUsername: bestThbUsd.username,
-      usdAmount: usdAmount.toFixed(2),
+      usdAmount: usdAmount ? usdAmount.toFixed(2) : undefined,
       usdMmkPrice: bestUsdMmk.price,
       usdMmkUsername: bestUsdMmk.username,
       usdMmkPayments: bestUsdMmk.payments,
-      thbMmkPrice: bestThbMmk,
+      thbMmkPrice: bestThbMmk.toFixed(2),
       mmkThbPrice: (100000/bestThbMmk).toFixed(2)
     };
   } catch(error) {
     console.error(error);
     throw error;
   }
-}
+};
 
 exports.calculateKyatToBaht = async(mmkAmount) => {
   try {
-    const p2pMmkUsd = await binanceService.getTopMmkUsdByMmkAmount(mmkAmount);
+    const isAmountProvided = !!mmkAmount;
+    let p2pMmkUsd = await binanceService.getTopMmkUsdByMmkAmount(mmkAmount);
     const bestMmkUsd = p2pMmkUsd[0];
-    const usdAmount = mmkAmount / bestMmkUsd.price;
-    const p2pUsdThb = await binanceService.getTopUsdThbByUsdAmount(usdAmount);
+    const usdAmount = isAmountProvided ? (mmkAmount / bestMmkUsd.price) : undefined;
+    let p2pUsdThb = await binanceService.getTopUsdThbByUsdAmount(usdAmount);
     const bestUsdThb = p2pUsdThb[0];
-    const bestThbMmk = (bestMmkUsd.price / bestUsdThb.price).toFixed(2);
+    const bestThbMmk = bestMmkUsd.price / bestUsdThb.price;
     return {
       mmkAmount: mmkAmount,
       usdMmkPrice: bestMmkUsd.price,
       usdMmkUsername: bestMmkUsd.username,
       usdMmkPayments: bestMmkUsd.payments,
-      usdAmount: usdAmount.toFixed(2),
+      usdAmount: usdAmount ? usdAmount.toFixed(2) : undefined,
       usdThbPrice: bestUsdThb.price,
       usdThbUsername: bestUsdThb.username,
-      thbMmkPrice: bestThbMmk,
+      thbMmkPrice: bestThbMmk.toFixed(2),
       mmkThbPrice: (100000/bestThbMmk).toFixed(2)
     };
   } catch(error) {
     console.error(error);
     throw error;
   }
-}
+};

@@ -12,9 +12,9 @@ const dateTimeFormatOptions = {
 exports.convertDate = (dateString) => {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-GB', {...dateTimeFormatOptions, timeZone: 'UTC'});
-}
+};
 
 exports.getCurrentDate = () => {
   return new Intl.DateTimeFormat('en-GB', {...dateTimeFormatOptions, timeZone: 'Asia/Bangkok'})
     .format(new Date());
-}
+};
