@@ -44,9 +44,9 @@ The bot is designed to be deployed on AWS Lambda and requires the setup of envir
    ```
    npm install
 3. **Configure AWS Lambda**
-- Package your project for deployment on AWS Lambda.
-- Set up environment variables (BOT_TOKEN, EXCLUDED_PAYMENTS and SUPERRICH_TOKEN) in your Lambda configuration.
-- Add your dependencies as an AWS Lambda layer.
+   - Package your project for deployment on AWS Lambda.
+   - Set up environment variables (BOT_TOKEN, EXCLUDED_PAYMENTS and SUPERRICH_TOKEN) in your Lambda configuration.
+   - Add your dependencies as an AWS Lambda layer.
 
 ### API Details
 - Binance P2P API: Used to retrieve the P2P rates for USD, THB, and MMK.
