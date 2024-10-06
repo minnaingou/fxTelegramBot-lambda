@@ -1,6 +1,7 @@
 # Telegram Exchange Rate Bot
 
 This is a Telegram bot that retrieves and calculates exchange rates between multiple currencies, including cash-out rates for USDT from Binance. The bot is deployed on AWS Lambda and built using Node.js.
+
 <img width="341" alt="image" src="https://github.com/user-attachments/assets/9db82f80-3d56-4fc8-9dde-b578bb1217db">
 
 ## Features
